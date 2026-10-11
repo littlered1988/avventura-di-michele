@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>L'avventura di Michele</title>
+
+  <!-- Queste righe servono per installare il gioco come una app (PWA) -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#7ec8f5">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="icon" href="assets/icona-192.png">
+  <link rel="apple-touch-icon" href="assets/icona-192.png">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Il foglio su cui il gioco viene disegnato -->
+  <canvas id="schermo"></canvas>
+
+  <!-- La barra in alto: cuori, stelle, livello e pulsante dell'audio -->
+  <div id="barra">
+    <span id="contaCuori"></span>
+    <span id="contaStelle"></span>
+    <span id="nomeLivello"></span>
+    <button id="pulsanteAudio" aria-label="Accendi o spegni l'audio">🔊</button>
+  </div>
+
+  <!-- Il cartello che appare all'inizio, quando vinci e quando devi riprovare -->
+  <div id="schermata">
+    <div id="cartello">
+      <h1 id="titolo"></h1>
+      <p id="messaggio"></p>
+      <button id="pulsanteGrande"></button>
+    </div>
+  </div>
+
+  <!-- I pulsanti per giocare col dito (si vedono solo su tablet e telefono) -->
+  <div id="comandiTouch">
+    <button id="tastoSinistra" aria-label="Sinistra">◀</button>
+    <button id="tastoDestra" aria-label="Destra">▶</button>
+    <button id="tastoSalta" aria-label="Salta">▲</button>
+  </div>
+
+  <!-- Il pannello segreto con le manopole (vedi settings.js) -->
+  <aside id="pannello" class="nascosto">
+    <h2>🔧 Pannello segreto</h2>
+    <div id="manopole"></div>
+    <button id="chiudiPannello">Chiudi</button>
+  </aside>
+
+  <!-- Avviso per chi tiene il telefono in verticale -->
+  <div id="ruota">📱↻<br>Gira lo schermo per giocare!</div>
+
+  <!-- I file del gioco, nell'ordine giusto: prima le manopole, poi i livelli, poi il gioco -->
+  <script src="settings.js"></script>
+  <script src="levels.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
