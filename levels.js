@@ -8,7 +8,7 @@
 //
 //    #   blocco di terreno: ci si cammina sopra
 //    *   stella da raccogliere
-//    E   nemico: cammina avanti e indietro, meglio saltarlo!
+//    E   nemico: cammina avanti e indietro. Saltagli in testa per sconfiggerlo!
 //    F   bandiera di arrivo: toccala per vincere il livello
 //    P   punto di partenza del personaggio
 //    -   niente, solo aria

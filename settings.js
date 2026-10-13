@@ -24,6 +24,9 @@ let coloreCielo = "hsl(200, 80%, 75%)";
 // Quanto camminano veloci i nemici. Con 0 stanno fermi!
 let velocitaNemici = 1;
 
+// Quanti punti si guadagnano saltando in testa a un mostro.
+let puntiMostro = 200;
+
 
 // =====================================================================
 //  IL PANNELLO SEGRETO
@@ -71,6 +74,11 @@ const manopole = [
     nome: "velocitaNemici", minimo: 0, massimo: 5, passo: 0.25,
     leggi: () => velocitaNemici,
     scrivi: (valore) => { velocitaNemici = valore; },
+  },
+  {
+    nome: "puntiMostro", minimo: 0, massimo: 1000, passo: 50,
+    leggi: () => puntiMostro,
+    scrivi: (valore) => { puntiMostro = valore; },
   },
 ];
 
@@ -124,12 +132,74 @@ for (const fine of ["pointerup", "pointerleave", "pointercancel"]) {
   titoloSegreto.addEventListener(fine, () => clearTimeout(timerTitolo));
 }
 
+// Qualcuno sta scrivendo in un campo di testo? Allora i tasti servono
+// per scrivere (il nome di un personaggio, la password...) e non per giocare.
+function staScrivendo(evento) {
+  return evento.target.matches && evento.target.matches('input[type="text"], input[type="password"]');
+}
+
 // --- Apertura segreta numero 2: il tasto P apre e chiude ---
 window.addEventListener("keydown", (evento) => {
-  if (evento.code === "KeyP") pannello.classList.toggle("nascosto");
+  if (evento.code === "KeyP" && !staScrivendo(evento)) pannello.classList.toggle("nascosto");
 });
 
 document.getElementById("chiudiPannello").addEventListener("click", (evento) => {
   chiudiPannello();
   evento.target.blur();
 });
+
+
+// =====================================================================
+//  LA PASSWORD DEL GENITORE
+// =====================================================================
+//  Serve solo a una cosa: se c'è, viene chiesta prima di eliminare un
+//  personaggio dalla galleria, così nessuno cancella per sbaglio il
+//  mostro di un amico. Se è vuota ("") non viene chiesto niente.
+//
+//  La password resta scritta nella memoria del browser di questo
+//  dispositivo. È un lucchetto per bambini, non una cassaforte!
+
+function leggiPasswordSalvata() {
+  try {
+    return localStorage.getItem("passwordGenitore") || "";
+  } catch (errore) {
+    return "";
+  }
+}
+
+function scriviPasswordSalvata(password) {
+  try {
+    localStorage.setItem("passwordGenitore", password);
+  } catch (errore) {
+    // Se il browser non lascia salvare, la password vale solo finché la pagina resta aperta.
+  }
+}
+
+let passwordGenitore = leggiPasswordSalvata();
+const pulsantePassword = document.getElementById("pulsantePassword");
+
+function aggiornaPulsantePassword() {
+  pulsantePassword.textContent = passwordGenitore === ""
+    ? "🔓 Metti una password genitore"
+    : "🔑 Cambia la password genitore";
+}
+
+// Per cambiare una password che c'è già bisogna prima sapere quella vecchia.
+async function cambiaPasswordGenitore() {
+  if (passwordGenitore !== "") {
+    const vecchia = await faiDomanda("Scrivi la password di adesso:", "password");
+    if (vecchia === null) return;
+    if (vecchia !== passwordGenitore) {
+      avvisa("La password non è giusta.");
+      return;
+    }
+  }
+  const nuova = await faiDomanda("Nuova password del genitore (lascia vuoto per toglierla):", "password");
+  if (nuova === null) return;
+  passwordGenitore = nuova;
+  scriviPasswordSalvata(nuova);
+  aggiornaPulsantePassword();
+}
+
+pulsantePassword.addEventListener("click", cambiaPasswordGenitore);
+aggiornaPulsantePassword();

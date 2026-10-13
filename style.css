@@ -54,6 +54,10 @@ button {
 
 #pulsanteAudio {
   margin-left: auto;
+}
+
+#pulsanteAudio,
+#pulsanteCasa {
   pointer-events: auto;
   width: 52px;
   height: 52px;
@@ -214,6 +218,517 @@ button {
     color: white;
     background: #3a7bd5;
   }
+}
+
+/* =====================================================================
+   I PERSONAGGI: menu, pagine, figurine e finestre
+   ===================================================================== */
+
+/* Nei campi dove si scrive, il testo si deve poter toccare e selezionare */
+input[type="text"],
+input[type="password"] {
+  user-select: text;
+  -webkit-user-select: text;
+  touch-action: auto;
+  font-family: inherit;
+}
+
+/* ---------- I pulsanti del menu iniziale ---------- */
+#pulsantiMenu {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 3vh;
+}
+
+#pulsantiMenu button,
+.pagina button,
+.pulsante,
+.cartellino button {
+  padding: 10px 16px;
+  font-size: clamp(15px, 4vh, 20px);
+  font-weight: bold;
+  color: #444;
+  background: #ffe9a8;
+  border: 3px solid #ffb300;
+  border-radius: 16px;
+}
+
+#pulsantiMenu #menuCrea {
+  width: 100%;
+  padding: 2vh 16px;
+  font-size: clamp(18px, 6vh, 30px);
+  color: white;
+  background: #e6452f;
+  border-color: #b5301e;
+}
+
+button.verde,
+.pagina button.verde,
+.cartellino button.verde {
+  color: white;
+  background: #3fbf4a;
+  border-color: #2a8a33;
+}
+
+/* Un'etichetta che sembra un pulsante: dentro c'è nascosto il campo per scegliere un file */
+.pulsante {
+  display: inline-block;
+  cursor: pointer;
+}
+
+.pulsante input {
+  display: none;
+}
+
+/* ---------- Le pagine ---------- */
+.pagina {
+  position: fixed;
+  top: 0;
+  left: 0;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  padding: 12px max(20px, env(safe-area-inset-right)) 40px max(20px, env(safe-area-inset-left));
+  background: #fff7e0;
+  color: #444;
+  z-index: 10;
+}
+
+/* Dentro le pagine col dito si può scorrere su e giù */
+.pagina, .pagina * {
+  touch-action: pan-y;
+}
+
+.pagina header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.pagina h2 {
+  margin: 0;
+  font-size: clamp(22px, 7vh, 40px);
+  color: #e6452f;
+}
+
+.pagina h3 {
+  margin: 16px 0 8px;
+  font-size: clamp(16px, 4.5vh, 22px);
+}
+
+.riga {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.piede {
+  margin-top: 30px;
+}
+
+.incoraggiamento {
+  text-align: center;
+  font-size: 20px;
+}
+
+/* ---------- Crea il tuo personaggio ---------- */
+.colonne {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 30px;
+}
+
+.colonne > div {
+  flex: 1;
+  min-width: 260px;
+}
+
+.pagina button.sceltaTipo {
+  width: 130px;
+  padding: 8px;
+  font-size: 20px;
+  background: white;
+  border-color: #cccccc;
+}
+
+.sceltaTipo span {
+  display: block;
+  font-size: 44px;
+}
+
+/* Il tipo scelto ha il bordo colorato e spesso */
+.pagina button.sceltaTipo.scelto {
+  background: #d9f7dc;
+  border: 5px solid #3fbf4a;
+}
+
+.campoGrande {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 420px;
+  padding: 10px 14px;
+  font-size: 26px;
+  border: 3px solid #ffb300;
+  border-radius: 14px;
+}
+
+.creatoDa {
+  display: block;
+  margin-top: 10px;
+  font-size: 18px;
+}
+
+.creatoDa input {
+  display: block;
+  font-size: 20px;
+}
+
+.colonnaAnteprima {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.colonnaAnteprima label {
+  width: 256px;
+  font-size: 18px;
+}
+
+.colonnaAnteprima input {
+  width: 100%;
+}
+
+/* Lo sfondo a scacchi: fa vedere dove l'immagine è trasparente */
+#anteprima,
+.figurina img {
+  background-color: white;
+  background-image:
+    linear-gradient(45deg, #d8d8d8 25%, transparent 25%, transparent 75%, #d8d8d8 75%),
+    linear-gradient(45deg, #d8d8d8 25%, transparent 25%, transparent 75%, #d8d8d8 75%);
+  background-size: 24px 24px;
+  background-position: 0 0, 12px 12px;
+}
+
+#anteprima {
+  width: 256px;
+  height: 256px;
+  max-width: 100%;
+  border: 4px solid #ffb300;
+  border-radius: 16px;
+}
+
+.pagina #pulsanteSalva {
+  padding: 12px 50px;
+  font-size: 30px;
+}
+
+/* ---------- Le figurine ---------- */
+.figurine {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.figurina,
+.pagina button.figurina {
+  width: 170px;
+  padding: 10px;
+  text-align: center;
+  font-weight: normal;
+  font-size: 15px;
+  color: #444;
+  background: white;
+  border: 4px solid #ffb300;
+  border-radius: 18px;
+  box-shadow: 0 5px 0 rgba(0, 0, 0, 0.12);
+}
+
+.figurina img,
+.figurina .faccina {
+  display: block;
+  width: 130px;
+  height: 130px;
+  margin: 0 auto 6px;
+  border-radius: 12px;
+  /* Nelle figurine lo sfondo a scacchi è molto più leggero */
+  background-image: none;
+  background-color: #eaf6ff;
+  object-fit: contain;
+}
+
+.figurina .faccina {
+  font-size: 90px;
+  line-height: 130px;
+}
+
+.nomeFigurina {
+  font-size: 19px;
+  font-weight: bold;
+  color: #e6452f;
+}
+
+.vuoto {
+  font-size: 18px;
+  color: #888;
+}
+
+/* ---------- L'editor di livelli ---------- */
+.pagina button.grande {
+  padding: 12px 28px;
+  font-size: clamp(18px, 6vh, 28px);
+}
+
+.pagina button.attrezzo {
+  background: white;
+  border-color: #cccccc;
+}
+
+.pagina button.attrezzo.scelto {
+  background: #d9f7dc;
+  border: 5px solid #3fbf4a;
+}
+
+/* La griglia è più larga dello schermo: col dito si scorre di lato */
+#grigliaEditor {
+  display: grid;
+  width: fit-content;
+  max-width: 100%;
+  margin: 12px 0;
+  overflow-x: auto;
+  border: 4px solid #ffb300;
+  border-radius: 8px;
+  background: #7ec8f5;
+}
+
+#grigliaEditor,
+#grigliaEditor * {
+  touch-action: pan-x pan-y;
+}
+
+.pagina button.casella {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  font-size: 24px;
+  line-height: 38px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 0;
+}
+
+.pagina button.casella.terreno {
+  background: #b5713b;
+}
+
+.pagina button.casella.prato {
+  border-top: 10px solid #5cc23a;
+}
+
+/* Il livello scritto con i simboli: stesso carattere che si usa per il codice */
+#testoLivello,
+.miniLivello {
+  margin: 0;
+  overflow-x: auto;
+  font-family: Consolas, Menlo, monospace;
+  color: #ffe066;
+  background: #1e1e32;
+  border-radius: 10px;
+}
+
+#testoLivello {
+  padding: 10px 14px;
+  font-size: 16px;
+  line-height: 1.25;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.miniLivello {
+  padding: 6px 8px;
+  font-size: 7px;
+  line-height: 1;
+}
+
+#paginaEditor .campoGrande {
+  max-width: 300px;
+  margin-top: 14px;
+}
+
+#elencoLivelli {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.cartaLivello {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 100%;
+  padding: 12px;
+  background: white;
+  border: 4px solid #ffb300;
+  border-radius: 18px;
+}
+
+/* ---------- Registra i suoni ---------- */
+.spiegazione {
+  font-size: clamp(15px, 4vh, 20px);
+}
+
+.rigaSuono {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  background: white;
+  border: 3px solid #ffb300;
+  border-radius: 16px;
+}
+
+.rigaSuono strong {
+  width: 210px;
+  font-size: clamp(16px, 4.5vh, 22px);
+}
+
+.rigaSuono select {
+  flex: 1;
+  min-width: 160px;
+  padding: 10px;
+  font-family: inherit;
+  font-size: clamp(15px, 4vh, 20px);
+  border: 3px solid #ffb300;
+  border-radius: 14px;
+  background: white;
+}
+
+/* Mentre si registra il pulsante diventa rosso e "batte" come un cuore */
+.pagina button.staRegistrando {
+  color: white;
+  background: #e6452f;
+  border-color: #b5301e;
+  animation: batte 0.8s ease-in-out infinite;
+}
+
+@keyframes batte {
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+/* ---------- Le finestre (figurina aperta, domande, avvisi) ---------- */
+.finestra {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 30;
+}
+
+.cartellino {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  box-sizing: border-box;
+  max-width: 90%;
+  max-height: 96%;
+  overflow-y: auto;
+  touch-action: pan-y;
+  padding: 16px 24px;
+  background: white;
+  border: 6px solid #ffb300;
+  border-radius: 24px;
+}
+
+.cartellino p {
+  margin: 0 0 6px;
+  max-width: 420px;
+  text-align: center;
+  font-size: clamp(18px, 5vh, 24px);
+  color: #444;
+}
+
+#finestraFigurina .cartellino button {
+  width: 220px;
+}
+
+#finestraFigurina .figurina {
+  border: none;
+  box-shadow: none;
+  padding: 0;
+}
+
+#pannello {
+  z-index: 20;
+}
+
+#pulsantePassword {
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 8px;
+  font-size: 14px;
+  border: none;
+  border-radius: 10px;
+}
+
+/* ---------- L'annuncio del mostro in arrivo ---------- */
+#annuncio {
+  position: fixed;
+  top: 18%;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 90%;
+  padding: 8px 20px;
+  text-align: center;
+  font-size: clamp(16px, 5vh, 26px);
+  font-weight: bold;
+  color: white;
+  background: rgba(142, 68, 173, 0.9);
+  border-radius: 20px;
+  pointer-events: none;
+}
+
+/* ---------- La festa di coriandoli ---------- */
+#festa {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 40;
+}
+
+#festa span {
+  position: absolute;
+  top: -15%;
+  font-size: 36px;
+  animation: cade 2.2s linear forwards;
+}
+
+/* Ogni coriandolo scende fino in fondo allo schermo girando su se stesso */
+@keyframes cade {
+  to {
+    transform: translateY(130vh) rotate(360deg);
+  }
+}
+
+#ruota {
+  z-index: 50;
 }
 
 /* Tutto quello che ha questa etichetta sparisce */

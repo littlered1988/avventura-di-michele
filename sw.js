@@ -18,6 +18,12 @@ const FILE_DEL_GIOCO = [
   "style.css",
   "settings.js",
   "levels.js",
+  "personaggi.js",
+  "galleria.js",
+  "creazione.js",
+  "suoni.js",
+  "editor.js",
+  "scambio.js",
   "game.js",
   "manifest.json",
   "assets/icona-192.png",
@@ -43,7 +49,9 @@ self.addEventListener("fetch", (evento) => {
 async function prendiFile(richiesta) {
   const memoria = await caches.open(NOME_MEMORIA);
   try {
-    const risposta = await fetch(richiesta);
+    // "no-cache" vuol dire: chiedi sempre al server se c'è una versione più nuova.
+    // Così, dopo aver cambiato un file, basta ricaricare la pagina per vederlo.
+    const risposta = await fetch(richiesta, { cache: "no-cache" });
     // Mettiamo da parte solo le risposte complete e riuscite (codice 200).
     if (risposta.status === 200) {
       memoria.put(richiesta, risposta.clone());

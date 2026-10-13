@@ -31,6 +31,8 @@ const VITE_INIZIALI = 3;          // con quanti cuori si parte
 const TEMPO_INVULNERABILE = 90;   // per quanti passi si lampeggia dopo un colpo (90 = un secondo e mezzo)
 const PASSI_NEMICO = 3;           // di quante caselle si allontana un nemico prima di tornare indietro
 const CADUTA_MASSIMA = 20;        // la velocità più alta a cui si può cadere
+const TEMPO_SCHIACCIATO = 30;     // per quanti passi un mostro resta schiacciato prima di sparire (30 = mezzo secondo)
+const DURATA_SCRITTA = 60;        // per quanti passi si vede una scritta come "+200" (60 = un secondo)
 const PASSO_DI_TEMPO = 1000 / 60; // il mondo si aggiorna 60 volte al secondo
 
 // In che momento del gioco siamo: "titolo", "gioco", "riprova" oppure "vittoria".
@@ -50,6 +52,17 @@ let bandiera = null;
 let vite = VITE_INIZIALI;
 let stelleRaccolte = 0;
 let stelleAInizioLivello = 0;
+let punti = 0;
+let puntiAInizioLivello = 0;
+let scritte = [];           // le scritte volanti, come "+200"
+
+// Quando si gioca un livello fatto con l'editor (vedi editor.js) qui dentro ci sono
+// le sue righe, il suo nome e cosa fare quando si esce. Altrimenti è null.
+let livelloCreato = null;
+
+let eroeScelto = null;              // il personaggio con cui si sta giocando (vedi galleria.js)
+let mostriAnnunciati = new Set();     // i mostri di cui abbiamo già detto "Attento! Arriva..."
+let larghezzaVista = 0;               // quanto mondo si vede sullo schermo, da sinistra a destra
 
 let telecameraX = 0;        // quanto abbiamo "scorso" il mondo verso destra
 let orologio = 0;           // conta i passi: serve per le piccole animazioni
@@ -92,6 +105,7 @@ const suoni = {
   stella: caricaSuono("assets/stella.mp3"),
   ahi: caricaSuono("assets/ahi.mp3"),
   vittoria: caricaSuono("assets/vittoria.mp3"),
+  schiacciato: caricaSuono("assets/schiacciato.mp3"),
 };
 
 // I suoni finti: ognuno è una piccola melodia.
@@ -101,6 +115,7 @@ const suoniFinti = {
   stella: [[900, 0.07], [1300, 0.12]],
   ahi: [[250, 0.12], [150, 0.2]],
   vittoria: [[523, 0.12], [659, 0.12], [784, 0.12], [1047, 0.3]],
+  schiacciato: [[400, 0.06], [200, 0.08], [100, 0.12]],
 };
 
 let audioSpento = false;
@@ -112,12 +127,16 @@ function preparaAudio() {
   if (!sintetizzatore) {
     const Sintetizzatore = window.AudioContext || window.webkitAudioContext;
     sintetizzatore = new Sintetizzatore();
+    preparaSuoniRegistrati();   // ora si possono preparare anche le voci registrate (vedi suoni.js)
   }
   if (sintetizzatore.state === "suspended") sintetizzatore.resume();
 }
 
 function suona(nome) {
   if (audioSpento) return;
+  // Prima scelta: la voce registrata e scelta nella pagina "Registra i suoni".
+  if (suonaRegistrato(nome)) return;
+  // Seconda scelta: il file nella cartella assets/. Terza: il suono finto.
   const registrazione = suoni[nome];
   if (registrazione.pronto) {
     registrazione.currentTime = 0;
@@ -163,9 +182,12 @@ function cambiaAudio() {
 //  volta, e per ogni lettera speciale creiamo la cosa giusta.
 
 function caricaLivello(numero) {
-  mappa = livelli[numero];
+  // SE stiamo giocando un livello dell'editor usiamo quello,
+  // ALTRIMENTI il livello numero tot di levels.js.
+  mappa = livelloCreato ? livelloCreato.righe : livelli[numero];
   nemici = [];
   stelle = [];
+  scritte = [];
   bandiera = null;
   altezzaLivello = mappa.length * CASELLA;
   larghezzaLivello = 0;
@@ -197,6 +219,7 @@ function creaGiocatore() {
     aTerra: false,
     guardaADestra: true,
     invulnerabile: 0,
+    piediPrima: (partenza.riga + 1) * CASELLA,   // dove erano i piedi un attimo fa
   };
 }
 
@@ -210,6 +233,9 @@ function creaNemico(colonna, riga) {
     altezza: grandezza,
     xPartenza: x,
     direzione: -1,   // -1 = va a sinistra, 1 = va a destra
+    sconfitto: false,
+    tempoSchiacciato: 0,
+    personaggio: mostroACaso(),   // quale mostro della galleria è (null = quello predefinito)
   };
 }
 
@@ -242,10 +268,43 @@ function creaBandiera(colonna, riga) {
 function aggiorna() {
   orologio++;
   muoviNemici();
+  muoviScritte();
   if (stato === "gioco") {
     aggiornaGiocatore();
     controllaCollisioni();
+    annunciaMostroInArrivo();
   }
+}
+
+// ---------- L'annuncio dei mostri ----------
+
+const annuncio = document.getElementById("annuncio");
+
+// La prima volta che un mostro della galleria entra nello schermo, lo presentiamo.
+// Un annuncio per volta: se ce n'è già uno, gli altri aspettano il loro turno.
+function annunciaMostroInArrivo() {
+  if (!annuncio.classList.contains("nascosto")) return;
+  for (const nemico of nemici) {
+    const mostro = nemico.personaggio;
+    const siVede = nemico.x < telecameraX + larghezzaVista;
+    if (mostro && siVede && !mostriAnnunciati.has(mostro.id)) {
+      mostriAnnunciati.add(mostro.id);
+      mostraAnnuncio(fraseDiArrivo(mostro));
+      return;
+    }
+  }
+}
+
+function fraseDiArrivo(mostro) {
+  if (mostro.autore) return "Attento! Arriva " + mostro.nome + " di " + mostro.autore + "!";
+  return "Attento! Arriva " + mostro.nome + "!";
+}
+
+// Mostra la scritta e dopo 3 secondi (3000 millisecondi) la nasconde.
+function mostraAnnuncio(testo) {
+  annuncio.textContent = testo;
+  annuncio.classList.remove("nascosto");
+  setTimeout(() => annuncio.classList.add("nascosto"), 3000);
 }
 
 // ---------- Il terreno ----------
@@ -285,6 +344,9 @@ function siToccano(a, b) {
 // ---------- Il giocatore ----------
 
 function aggiornaGiocatore() {
+  // Prima di muoverci ci ricordiamo dov'erano i piedi: serve per capire
+  // se poi atterriamo in testa a un mostro.
+  giocatore.piediPrima = giocatore.y + giocatore.altezza;
   cambiaDimensione();
   leggiComandi();
   applicaGravita();
@@ -364,8 +426,14 @@ function muoviInVerticale() {
 
 function muoviNemici() {
   for (const nemico of nemici) {
-    muoviNemico(nemico);
+    if (nemico.sconfitto) {
+      nemico.tempoSchiacciato--;   // sta fermo e aspetta di sparire
+    } else {
+      muoviNemico(nemico);
+    }
   }
+  // Teniamo solo i mostri ancora vivi e quelli che si stanno ancora schiacciando.
+  nemici = nemici.filter((nemico) => !nemico.sconfitto || nemico.tempoSchiacciato > 0);
 }
 
 function muoviNemico(nemico) {
@@ -414,14 +482,55 @@ function raccogliStella(stella) {
 }
 
 function controllaNemici() {
-  // Mentre lampeggia, il giocatore non può farsi male di nuovo.
-  if (giocatore.invulnerabile > 0) return;
   for (const nemico of nemici) {
-    if (siToccano(giocatore, nemico)) {
+    if (nemico.sconfitto) continue;                 // un mostro schiacciato non fa più niente
+    if (!siToccano(giocatore, nemico)) continue;    // questo mostro non lo stiamo toccando
+
+    // ---------- LA REGOLA DEL SALTO IN TESTA ----------
+    // Il gioco si fa due domande:
+    //   1. L'eroe sta cadendo verso il basso?
+    //   2. Un attimo fa i suoi piedi erano più in alto della testa del mostro?
+    //
+    // SE la risposta è "sì" a tutte e due, vuol dire che gli è saltato in testa:
+    //    il mostro è sconfitto!
+    // ALTRIMENTI vuol dire che l'ha toccato di fianco o da sotto:
+    //    l'eroe perde una vita (ma non mentre lampeggia).
+    const staCadendo = giocatore.velocitaY > 0;
+    const piediEranoSopra = giocatore.piediPrima <= nemico.y;
+
+    if (staCadendo && piediEranoSopra) {
+      sconfiggiNemico(nemico);
+    } else if (giocatore.invulnerabile === 0) {
       perdiVita();
       return;
     }
   }
+}
+
+function sconfiggiNemico(nemico) {
+  nemico.sconfitto = true;
+  nemico.tempoSchiacciato = TEMPO_SCHIACCIATO;
+  punti += puntiMostro;
+  scritte.push(creaScritta("+" + puntiMostro, nemico.x + nemico.larghezza / 2, nemico.y));
+  // Un piccolo rimbalzo: come un salto, ma più basso.
+  giocatore.velocitaY = -forzaSalto * 0.6;
+  suona("schiacciato");
+  aggiornaBarra();
+}
+
+// ---------- Le scritte volanti ----------
+
+function creaScritta(testo, x, y) {
+  return { testo: testo, x: x, y: y, tempo: DURATA_SCRITTA };
+}
+
+// Ogni scritta sale piano piano e, quando il suo tempo finisce, la togliamo.
+function muoviScritte() {
+  for (const scritta of scritte) {
+    scritta.y -= 1;
+    scritta.tempo--;
+  }
+  scritte = scritte.filter((scritta) => scritta.tempo > 0);
 }
 
 // Se il giocatore è caduto in un buco, perde una vita e riparte dall'inizio.
@@ -445,6 +554,7 @@ const titolo = document.getElementById("titolo");
 const messaggio = document.getElementById("messaggio");
 const pulsanteGrande = document.getElementById("pulsanteGrande");
 const pulsanteAudio = document.getElementById("pulsanteAudio");
+const pulsantiMenu = document.getElementById("pulsantiMenu");
 
 // Cosa deve succedere quando si preme il pulsante grande del cartello.
 let azionePulsante = null;
@@ -454,6 +564,7 @@ function mostraSchermata(testoTitolo, testoMessaggio, testoPulsante, azione) {
   messaggio.textContent = testoMessaggio;
   pulsanteGrande.textContent = testoPulsante;
   azionePulsante = azione;
+  pulsantiMenu.classList.add("nascosto");   // i pulsanti del menu si vedono solo nel titolo
   schermata.classList.remove("nascosto");
 }
 
@@ -467,7 +578,9 @@ function aggiornaBarra() {
   document.getElementById("contaCuori").textContent =
     "❤️".repeat(cuoriPieni) + "🖤".repeat(VITE_INIZIALI - cuoriPieni);
   document.getElementById("contaStelle").textContent = "⭐ " + stelleRaccolte;
-  document.getElementById("nomeLivello").textContent = "Livello " + (numeroLivello + 1);
+  document.getElementById("contaPunti").textContent = "🏆 " + punti;
+  document.getElementById("nomeLivello").textContent =
+    livelloCreato ? livelloCreato.nome : "Livello " + (numeroLivello + 1);
 }
 
 function mostraTitolo() {
@@ -476,14 +589,67 @@ function mostraTitolo() {
     "L'avventura di Michele",
     "Raccogli le stelle e arriva alla bandiera!",
     "GIOCA",
-    iniziaLivello
+    apriSceltaEroe   // prima di giocare si sceglie l'eroe: "Chi gioca?"
   );
+  pulsantiMenu.classList.remove("nascosto");
+}
+
+// Comincia una partita nuova dal primo livello, con l'eroe scelto.
+function iniziaPartita(eroe) {
+  eroeScelto = eroe;
+  livelloCreato = null;
+  numeroLivello = 0;
+  stelleAInizioLivello = 0;
+  puntiAInizioLivello = 0;
+  mostriAnnunciati.clear();
+  iniziaLivello();
+}
+
+// Fa giocare un livello costruito con l'editor.
+//   righe     = il livello scritto con i simboli
+//   nome      = il nome da mostrare in alto
+//   alRitorno = cosa fare quando si esce (per esempio riaprire l'editor)
+function giocaLivelloCreato(righe, nome, alRitorno) {
+  livelloCreato = { righe: righe, nome: nome, alRitorno: alRitorno };
+  stelleAInizioLivello = 0;
+  puntiAInizioLivello = 0;
+  mostriAnnunciati.clear();
+  schermata.classList.add("nascosto");
+  iniziaLivello();
+}
+
+function esciDalLivelloCreato() {
+  const alRitorno = livelloCreato.alRitorno;
+  livelloCreato = null;
+  stato = "titolo";
+  alRitorno();
+}
+
+// Il pulsante con la casetta: dal livello dell'editor si torna all'editor,
+// da una partita normale si torna al menu iniziale.
+function tornaAlMenu() {
+  schermata.classList.add("nascosto");
+  if (livelloCreato) {
+    esciDalLivelloCreato();
+  } else {
+    tornaAlTitolo();
+  }
+}
+
+// Scrive nella memoria i risultati dell'eroe (vedi personaggi.js).
+// Il record cambia solo se ha fatto meglio di prima.
+function salvaRecordEroe() {
+  if (!eroeScelto || livelloCreato) return;   // i livelli dell'editor non contano per i record
+  salvaRecord(eroeScelto.id, stelleRaccolte, numeroLivello + 1)
+    .then(aggiornaElenco)
+    .catch(() => {});   // se la memoria non funziona, si gioca lo stesso
 }
 
 // Fa partire (o ripartire) il livello di adesso, con tutte le vite.
 function iniziaLivello() {
   vite = VITE_INIZIALI;
   stelleRaccolte = stelleAInizioLivello;
+  punti = puntiAInizioLivello;
   caricaLivello(numeroLivello);
   aggiornaBarra();
   stato = "gioco";
@@ -504,6 +670,7 @@ function rimettiAllaPartenza() {
 
 function mostraRiprova() {
   stato = "riprova";
+  salvaRecordEroe();
   mostraSchermata(
     "Riprova!",
     "Ci eri quasi! Ogni volta che riprovi diventi più bravo. 💪",
@@ -516,14 +683,26 @@ function vinciLivello() {
   stato = "vittoria";
   suona("vittoria");
   stelleAInizioLivello = stelleRaccolte;
+  puntiAInizioLivello = punti;
+  salvaRecordEroe();
+
+  if (livelloCreato) {
+    mostraSchermata(
+      "Bravo Michele!",
+      "Hai finito \"" + livelloCreato.nome + "\" con " + stelleRaccolte + " stelle! ⭐",
+      "CONTINUA",
+      esciDalLivelloCreato
+    );
+    return;
+  }
 
   const eraUltimoLivello = numeroLivello === livelli.length - 1;
   if (eraUltimoLivello) {
     mostraSchermata(
       "Bravo Michele!",
-      "Hai finito tutti i livelli con " + stelleRaccolte + " stelle! 🏆",
+      "Hai finito tutti i livelli con " + stelleRaccolte + " stelle e " + punti + " punti! 🏆",
       "GIOCA ANCORA",
-      ricominciaDaCapo
+      apriSceltaEroe
     );
   } else {
     mostraSchermata(
@@ -537,12 +716,6 @@ function vinciLivello() {
 
 function passaAlLivelloSuccessivo() {
   numeroLivello++;
-  iniziaLivello();
-}
-
-function ricominciaDaCapo() {
-  numeroLivello = 0;
-  stelleAInizioLivello = 0;
   iniziaLivello();
 }
 
@@ -564,7 +737,7 @@ function disegna() {
   // Ingrandiamo o rimpiccioliamo tutto in modo che il livello
   // occupi sempre l'intera altezza dello schermo.
   const ingrandimento = schermo.height / altezzaLivello;
-  const larghezzaVista = schermo.width / ingrandimento;
+  larghezzaVista = schermo.width / ingrandimento;
   penna.setTransform(ingrandimento, 0, 0, ingrandimento, 0, 0);
 
   muoviTelecamera(larghezzaVista);
@@ -577,6 +750,7 @@ function disegna() {
   disegnaStelle();
   disegnaNemici();
   disegnaGiocatore();
+  disegnaScritte();
 }
 
 // La telecamera segue il giocatore tenendolo al centro,
@@ -740,7 +914,9 @@ function disegnaGiocatore() {
   // Dopo un colpo il giocatore lampeggia: un momento si vede e un momento no.
   const lampeggia = Math.floor(giocatore.invulnerabile / 6) % 2 === 1;
   if (lampeggia) return;
-  disegnaPersonaggio(giocatore, immagini.player, giocatore.guardaADestra, disegnaGiocatoreFinto);
+  // Usiamo il disegno dell'eroe scelto; se non ne ha uno suo, quello predefinito.
+  const figura = figuraDi(eroeScelto) || immagini.player;
+  disegnaPersonaggio(giocatore, figura, giocatore.guardaADestra, disegnaGiocatoreFinto);
 }
 
 function disegnaGiocatoreFinto(larghezza, altezza) {
@@ -762,8 +938,38 @@ function disegnaGiocatoreFinto(larghezza, altezza) {
 
 function disegnaNemici() {
   for (const nemico of nemici) {
-    disegnaPersonaggio(nemico, immagini.nemico, nemico.direzione > 0, disegnaNemicoFinto);
+    const forma = nemico.sconfitto ? formaSchiacciata(nemico) : nemico;
+    const figura = figuraDi(nemico.personaggio) || immagini.nemico;
+    disegnaPersonaggio(forma, figura, nemico.direzione > 0, disegnaNemicoFinto);
   }
+}
+
+// Un mostro schiacciato è largo uguale ma molto più basso, appoggiato per terra.
+function formaSchiacciata(nemico) {
+  const altezzaSchiacciata = nemico.altezza * 0.3;
+  return {
+    x: nemico.x,
+    y: nemico.y + nemico.altezza - altezzaSchiacciata,
+    larghezza: nemico.larghezza,
+    altezza: altezzaSchiacciata,
+  };
+}
+
+// ---------- Scritte volanti ----------
+
+function disegnaScritte() {
+  penna.font = "bold 22px 'Comic Sans MS', sans-serif";
+  penna.textAlign = "center";
+  for (const scritta of scritte) {
+    // Più il tempo sta per finire, più la scritta diventa trasparente.
+    penna.globalAlpha = scritta.tempo / DURATA_SCRITTA;
+    penna.fillStyle = "white";
+    penna.strokeStyle = "#444444";
+    penna.lineWidth = 4;
+    penna.strokeText(scritta.testo, scritta.x, scritta.y);
+    penna.fillText(scritta.testo, scritta.x, scritta.y);
+  }
+  penna.globalAlpha = 1;
 }
 
 function disegnaNemicoFinto(larghezza, altezza) {
@@ -797,13 +1003,15 @@ const tastiDellaTastiera = {
 
 window.addEventListener("keydown", (evento) => {
   preparaAudio();
+  if (staScrivendo(evento)) return;   // i tasti servono per scrivere un nome
   const comando = tastiDellaTastiera[evento.code];
   if (comando) {
     tasti[comando] = true;
     evento.preventDefault();
   }
   // Quando c'è un cartello, il tasto Invio preme il pulsante grande.
-  if (evento.code === "Enter" && stato !== "gioco") {
+  const cartelloVisibile = !schermata.classList.contains("nascosto");
+  if (evento.code === "Enter" && stato !== "gioco" && cartelloVisibile) {
     premiPulsanteGrande();
     evento.preventDefault();
   }
@@ -835,6 +1043,11 @@ pulsanteGrande.addEventListener("click", premiPulsanteGrande);
 pulsanteAudio.addEventListener("click", () => {
   cambiaAudio();
   pulsanteAudio.blur();
+});
+
+document.getElementById("pulsanteCasa").addEventListener("click", (evento) => {
+  tornaAlMenu();
+  evento.target.blur();
 });
 
 window.addEventListener("pointerdown", preparaAudio);
