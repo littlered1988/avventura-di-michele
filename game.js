@@ -622,6 +622,7 @@ function esciDalLivelloCreato() {
   const alRitorno = livelloCreato.alRitorno;
   livelloCreato = null;
   stato = "titolo";
+  aggiornaBarra();   // in alto torna la scritta "Livello 1" al posto del nome del livello creato
   alRitorno();
 }
 
